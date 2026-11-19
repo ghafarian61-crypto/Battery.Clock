@@ -57,7 +57,7 @@ class ClockView(context: Context) : View(context) {
     private var timeSet = false
     private var hourAngle = 0f      // degrees clockwise from 12
     private var minuteAngle = 0f
-    private var position = 0        // 0 = top, 1 = one step lower (hour parity), both modes
+    private var position = 0        // 0 = top, 1 = lower step (hour parity); the real offset is shiftFraction()
     private var isDay = true
     private var timeText = ""       // plain ASCII digits and ":"
     private var primary = Color.GREEN     // numbers / digits
@@ -397,14 +397,21 @@ class ClockView(context: Context) : View(context) {
     }
 
     /** Radius the analog clock would have on this screen (also the reference for the digital line weight). */
+    /** Top of the usable area: under the camera plus the extra space chosen in the settings. */
+    private fun topEdge(h: Float): Float = min(cutoutTop, h * 0.2f) + min(dp(cfg.topPad.toFloat()), h * 0.3f)
+
+    /** 0 = top position, 1 = full lower step. Even hours top, odd hours lower; no shift when it is switched off. */
+    private fun shiftFraction(): Float =
+        if (!cfg.shiftOn) 0f else position * (cfg.shiftRange / 100f)
+
     private fun analogRadius(w: Float, h: Float): Float {
-        val top = min(cutoutTop, h * 0.2f)
+        val top = topEdge(h)
         return min(w, (h - top) / SLOTS) * SIZE_FACTOR / 2f * (cfg.clockSize / 100f)
     }
 
 
     private fun layoutAnalog(w: Float, h: Float) {
-        val top = min(cutoutTop, h * 0.2f)
+        val top = topEdge(h)
         val slotH = (h - top) / SLOTS
         radius = analogRadius(w, h)                     // circle is smaller than its band: bands never overlap
         cx = w / 2f
@@ -462,7 +469,7 @@ class ClockView(context: Context) : View(context) {
         val perCell = 4f * GLYPH_ASPECT + slotRatio + 4f * GLYPH_GAP         // 4 digits + colon slot + 4 gaps, in cell heights
         val symbolPerCell = if (hour12) SYMBOL_RATIO + SYMBOL_GAP_RATIO else 0f
 
-        val topY = cutoutTop + dp(DIGITAL_TOP_MARGIN_DP)
+        val topY = cutoutTop + dp(DIGITAL_TOP_MARGIN_DP) + min(dp(cfg.topPad.toFloat()), h * 0.3f)
         val availW = w * (1f - 2f * DIGITAL_MARGIN) - stroke
 
         // Cell height: as wide as the screen allows, and small enough for both positions to fit under each other.
@@ -570,13 +577,14 @@ class ClockView(context: Context) : View(context) {
         if (!digitalReady) return
         // Fewer characters (12 h, one-digit hour) are centred in the same box, so the symbol never moves.
         val x = boxLeft + (boxW - runWidth(timeText)) / 2f
-        drawRun(canvas, timeText, x, digitTop[position], numberPaint)
-        if (hour12) drawSymbol(canvas, symbolX, symbolY[position])
+        val f = shiftFraction()
+        drawRun(canvas, timeText, x, digitTop[0] + (digitTop[1] - digitTop[0]) * f, numberPaint)
+        if (hour12) drawSymbol(canvas, symbolX, symbolY[0] + (symbolY[1] - symbolY[0]) * f)
     }
 
     private fun drawAnalog(canvas: Canvas) {
         if (radius <= 0f) return
-        val cy = slotCy[position]
+        val cy = slotCy[0] + (slotCy[1] - slotCy[0]) * shiftFraction()
 
         for (i in 0 until 12) {
             drawRun(canvas, labels[i], cx + numX[i], cy + numY[i], numberPaint)

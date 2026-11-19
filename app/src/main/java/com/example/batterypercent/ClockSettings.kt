@@ -109,6 +109,15 @@ class ClockSettings(private val a: Activity, private val onReset: () -> Unit) {
         addSwitch(root, R.string.flash_on, "flash_on", true)
         addSeek(root, R.string.flash_sec, 1, ClockStyle.FLASH_MAX_SEC, "flash_sec", 10, " s")
 
+        // ---- hourly shift (burn-in protection)
+        addHeader(root, R.string.sec_shift)
+        addSwitch(root, R.string.shift_on, "shift_on", true)
+        addSeek(root, R.string.shift_range, ClockStyle.SHIFT_MIN, 100, "shift_range", 100, "%")
+        addSeek(root, R.string.top_pad, 0, ClockStyle.TOP_PAD_MAX, "top_pad", 0, " dp")
+        val shiftNote = text(R.string.shift_note, 13f, Color.GRAY)
+        shiftNote.setPadding(0, dp(8), 0, 0)
+        root.addView(shiftNote)
+
         // ---- day / night schedule
         addHeader(root, R.string.sec_schedule)
         addRow(root, Schedule.DAY, R.string.day)

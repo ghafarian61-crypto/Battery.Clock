@@ -30,6 +30,8 @@ object ClockStyle {
     const val LINE_MIN = 1           // pen width in pixels
     const val LINE_MAX = 4
     const val FLASH_MAX_SEC = 60
+    const val SHIFT_MIN = 10         // % of the full hourly step
+    const val TOP_PAD_MAX = 150      // dp
 
     private const val PREFS = "clock_style"
 
@@ -70,7 +72,13 @@ object ClockStyle {
         val tempT2: Int = 35,
         val tempC1: Int = P_BLUE,
         val tempC2: Int = P_GREEN,
-        val tempC3: Int = P_RED
+        val tempC3: Int = P_RED,
+        /** Hourly shift (burn-in): even hours at the top, odd hours one step lower. Off = always at the top. */
+        val shiftOn: Boolean = true,
+        /** How far down the lower position is, % of the full step (100 = no pixel shared with the top position). */
+        val shiftRange: Int = 100,
+        /** Extra space (dp) between the camera / top edge and the clock, for phones whose camera hides the top. */
+        val topPad: Int = 0
     )
 
     fun load(ctx: Context): Config {
@@ -105,7 +113,10 @@ object ClockStyle {
             tempT2 = maxOf(u1, p.getInt("temp_t2", d.tempT2).coerceIn(0, 99)),
             tempC1 = pal(p.getInt("temp_c1", d.tempC1)),
             tempC2 = pal(p.getInt("temp_c2", d.tempC2)),
-            tempC3 = pal(p.getInt("temp_c3", d.tempC3))
+            tempC3 = pal(p.getInt("temp_c3", d.tempC3)),
+            shiftOn = p.getBoolean("shift_on", d.shiftOn),
+            shiftRange = p.getInt("shift_range", d.shiftRange).coerceIn(SHIFT_MIN, 100),
+            topPad = p.getInt("top_pad", d.topPad).coerceIn(0, TOP_PAD_MAX)
         )
     }
 
