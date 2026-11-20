@@ -85,6 +85,7 @@ class ClockSettings(private val a: Activity, private val onReset: () -> Unit) {
         )
         lockStatus.setPadding(0, dp(12), 0, 0)
         root.addView(lockStatus)
+        addSwitch(root, R.string.pulse_first, "pulse_first", false)
         val pulseNote = text(R.string.pulse_note, 13f, Color.GRAY)
         pulseNote.setPadding(0, dp(8), 0, 0)
         root.addView(pulseNote)
@@ -94,6 +95,23 @@ class ClockSettings(private val a: Activity, private val onReset: () -> Unit) {
         val rlp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         rlp.topMargin = dp(12)
         root.addView(recheck, rlp)
+
+        // ---- timing report: only alarms delivered more than 2 s late are listed
+        val logTitle = text(R.string.log_title, 14f, Color.LTGRAY)
+        logTitle.setPadding(0, dp(16), 0, 0)
+        root.addView(logTitle)
+        val logView = TextView(a)
+        logView.textSize = 12f
+        logView.setTextColor(Color.GRAY)
+        logView.text = EventLog.read(a).lines().take(12).joinToString("\n").ifEmpty { a.getString(R.string.log_empty) }
+        root.addView(logView)
+        val logClear = Button(a)
+        logClear.setText(R.string.log_clear)
+        logClear.setOnClickListener {
+            EventLog.clear(a)
+            logView.setText(R.string.log_empty)
+        }
+        root.addView(logClear)
 
         // ---- sun / moon symbol (works like AM / PM)
         addHeader(root, R.string.sec_symbol)

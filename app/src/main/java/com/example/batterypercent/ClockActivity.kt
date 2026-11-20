@@ -18,15 +18,16 @@ import android.view.WindowManager
 import java.util.Calendar
 
 /**
- * The clock screen. [MonitorService] opens it whenever the screen turns off, so it stands in for the
- * switched-off screen:
- *  - shows over the lock screen, turns the screen on and KEEPS it on (window flag + a screen wake lock,
- *    because some phones, e.g. the Galaxy A34, ignore the flag alone and time the screen out);
- *  - brightness follows the day / night [Schedule]; outside both ranges it draws black only, lets the screen
- *    switch off by itself and never reopens;
- *  - redraws once a minute (ACTION_TIME_TICK), nothing else runs;
- *  - on the hour (minute 0) it is shown at full brightness for 10 seconds, then back to the scheduled value;
- *  - one tap closes it and shows the home / lock screen; so does the power button (handled by the service).
+ * The clock screen. [MonitorService] opens it to stand in for the switched-off screen. Two modes:
+ *  - pulse mode ([EXTRA_PULSE], the default): opened by the exact alarm of [PulseScheduler] at the start of every
+ *    interval; it turns the screen on, shows the time for a few seconds and then switches the screen off again
+ *    ([ScreenLock]); nothing is held in between, so the hardware sleeps;
+ *  - always-on mode (also the fallback while the screen-off permission is missing): it turns the screen on and KEEPS
+ *    it on (window flag + a screen wake lock, because some phones, e.g. the Galaxy A34, ignore the flag alone),
+ *    redraws once a minute (ACTION_TIME_TICK) and does nothing else.
+ * In both: shows over the lock screen; brightness follows the day / night [Schedule] (outside both ranges it draws
+ * black only and the screen goes off by itself); on the hour (minute 0) it is shown at full brightness for the
+ * flash time; one tap closes it and shows the home / lock screen; so does the power button (handled by the service).
  */
 class ClockActivity : Activity() {
 

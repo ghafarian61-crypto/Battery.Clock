@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.batterypercent"
         minSdk = 26
         targetSdk = 33
-        versionCode = 8
-        versionName = "3.4.2"
+        versionCode = 9
+        versionName = "3.5"
     }
 
     buildTypes {

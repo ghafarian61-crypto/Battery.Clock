@@ -54,6 +54,9 @@ object PulseScheduler {
     const val ACTION = "com.example.batterypercent.PULSE"
     private const val REQUEST_CODE = 4711
 
+    /** When the last alarm was booked for; the service compares it with the real delivery time. */
+    @Volatile var planned = 0L
+
     /** The alarm fires a little after the minute changes, so the clock reads the NEW minute. */
     private const val LATENCY_MS = 300L
 
@@ -78,6 +81,7 @@ object PulseScheduler {
     }
 
     private fun scheduleAt(ctx: Context, triggerAt: Long) {
+        planned = triggerAt
         val am = ctx.getSystemService(AlarmManager::class.java) ?: return
         val pi = pending(ctx)
         try {

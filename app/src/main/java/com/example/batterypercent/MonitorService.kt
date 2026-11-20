@@ -167,7 +167,9 @@ class MonitorService : Service() {
         if (ClockState.showing) return
         if (!Settings.canDrawOverlays(this)) return
         if (ClockStyle.pulseActive(this)) {
-            startPulse()
+            // By default nothing is shown now: the next pulse is at the next exact minute (hh:mm:00), like every
+            // other one. "pulse_first" shows the clock at once as well.
+            if (ClockStyle.pulseFirst(this)) startPulse() else PulseScheduler.scheduleNext(this)
             return
         }
         try {
@@ -181,6 +183,8 @@ class MonitorService : Service() {
 
     /** The alarm of pulse mode: wake the screen for a few seconds, unless the situation has changed. */
     private fun onPulseAlarm() {
+        val late = System.currentTimeMillis() - PulseScheduler.planned
+        if (PulseScheduler.planned > 0L && late > 2000L) EventLog.add(this, "pulse alarm late by $late ms")
         if (!ClockStyle.pulseActive(this)) return                         // mode switched off / no permission: the chain ends
         if (plugged || BatteryInfo.plugged(BatteryInfo.sticky(this))) return   // the charging screen is used instead
         if (isInteractive()) return                                       // someone uses the phone: restart at next screen-off
