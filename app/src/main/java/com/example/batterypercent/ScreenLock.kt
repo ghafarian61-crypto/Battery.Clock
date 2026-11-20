@@ -39,21 +39,30 @@ object ScreenLock {
 
     /** The permission needed on this Android version has been given. */
     fun isGranted(ctx: Context): Boolean =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) accessibilityEnabled(ctx) else adminActive(ctx)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) accessibilityEnabled(ctx) || adminActive(ctx)
+        else adminActive(ctx)
 
     /** Switches the screen off now. False when that is not possible (no permission yet). */
-    fun lock(ctx: Context): Boolean = try {
+    fun lock(ctx: Context): Boolean {
+        // Android 9+: the accessibility service first (acts exactly like the power button) ...
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            LockAccessibilityService.instance
-                ?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN) ?: false
-        } else if (adminActive(ctx)) {
-            ctx.getSystemService(DevicePolicyManager::class.java).lockNow()
-            true
-        } else {
+            try {
+                val s = LockAccessibilityService.instance
+                if (s != null && s.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)) return true
+            } catch (e: Exception) {
+            }
+        }
+        // ... otherwise the device administrator (the only way on Android 8, and a way around "restricted settings").
+        return try {
+            if (adminActive(ctx)) {
+                ctx.getSystemService(DevicePolicyManager::class.java).lockNow()
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
             false
         }
-    } catch (e: Exception) {
-        false
     }
 }
 

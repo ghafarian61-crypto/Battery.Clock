@@ -120,20 +120,37 @@ class MainActivity : Activity() {
      * Android 9+: the accessibility switch; the dialog explains it. On Android 13+ a side-loaded app needs
      * "Allow restricted settings" first, which has its own button.
      */
+    private fun askAdmin() {
+        try {
+            startActivityForResult(
+                Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                    .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, ScreenLock.adminComponent(this))
+                    .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.lock_admin_explain)),
+                RC_LOCK
+            )
+        } catch (e: Exception) {
+            next()
+        }
+    }
+
     private fun askLock(pkg: Uri) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-            try {
-                startActivityForResult(
-                    Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                        .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, ScreenLock.adminComponent(this))
-                        .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.lock_admin_explain)),
-                    RC_LOCK
-                )
-            } catch (e: Exception) {
-                next()
-            }
+            askAdmin()
             return
         }
+        // Android 9+: two ways. The accessibility switch (best: fingerprint keeps working) can be blocked by
+        // "restricted settings" on side-loaded apps, so the plain device-administrator dialog is offered too.
+        AlertDialog.Builder(this)
+            .setTitle(R.string.lock_title)
+            .setMessage(R.string.lock_choose)
+            .setCancelable(false)
+            .setPositiveButton(R.string.lock_way_admin) { _, _ -> askAdmin() }
+            .setNeutralButton(R.string.lock_way_access) { _, _ -> askAccessibility(pkg) }
+            .setNegativeButton(R.string.lock_later) { _, _ -> next() }
+            .show()
+    }
+
+    private fun askAccessibility(pkg: Uri) {
         AlertDialog.Builder(this)
             .setTitle(R.string.lock_title)
             .setMessage(R.string.lock_message)
