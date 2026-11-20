@@ -166,7 +166,7 @@ class MonitorService : Service() {
         if (!Schedule.isActive(this)) return             // outside the day / night ranges: stay off
         if (ClockState.showing) return
         if (!Settings.canDrawOverlays(this)) return
-        if (ClockStyle.pulseEnabled(this)) {
+        if (ClockStyle.pulseActive(this)) {
             startPulse()
             return
         }
@@ -181,7 +181,7 @@ class MonitorService : Service() {
 
     /** The alarm of pulse mode: wake the screen for a few seconds, unless the situation has changed. */
     private fun onPulseAlarm() {
-        if (!ClockStyle.pulseEnabled(this)) return                        // mode switched off: the chain ends
+        if (!ClockStyle.pulseActive(this)) return                         // mode switched off / no permission: the chain ends
         if (plugged || BatteryInfo.plugged(BatteryInfo.sticky(this))) return   // the charging screen is used instead
         if (isInteractive()) return                                       // someone uses the phone: restart at next screen-off
         if (!Schedule.isActive(this)) {                                   // outside the day / night ranges: sleep until the next one

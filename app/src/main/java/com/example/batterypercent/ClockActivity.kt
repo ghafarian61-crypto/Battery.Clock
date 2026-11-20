@@ -140,9 +140,8 @@ class ClockActivity : Activity() {
         handler.removeCallbacks(endPulse)
         holdScreen(false)
         // Announce the screen-off first: the service must not mistake it for the user and open the clock again.
-        val canLock = ScreenLock.isGranted(this)
-        PulseState.markExpectedOff(this, canLock)
-        if (canLock) ScreenLock.lock(this)
+        PulseState.markExpectedOff(this, true)
+        if (!ScreenLock.lock(this)) PulseState.markExpectedOff(this, false)   // not possible: the system timeout does it
         ClockState.showing = false
         finishAndRemoveTask()
     }

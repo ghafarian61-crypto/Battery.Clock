@@ -79,6 +79,12 @@ class ClockSettings(private val a: Activity, private val onReset: () -> Unit) {
         }
         addSeek(root, R.string.pulse_interval, 1, ClockStyle.PULSE_MIN_MAX, "pulse_min", 1, " min")
         addSeek(root, R.string.pulse_seconds, 2, ClockStyle.PULSE_SEC_MAX, "pulse_sec", 5, " s")
+        val lockStatus = text(
+            if (ScreenLock.isGranted(a)) R.string.lock_status_on else R.string.lock_status_off,
+            14f, if (ScreenLock.isGranted(a)) Color.rgb(90, 255, 90) else Color.rgb(255, 120, 90)
+        )
+        lockStatus.setPadding(0, dp(12), 0, 0)
+        root.addView(lockStatus)
         val pulseNote = text(R.string.pulse_note, 13f, Color.GRAY)
         pulseNote.setPadding(0, dp(8), 0, 0)
         root.addView(pulseNote)

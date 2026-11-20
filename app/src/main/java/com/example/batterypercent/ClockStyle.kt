@@ -153,6 +153,10 @@ object ClockStyle {
 
     // ---- pulse mode: the screen wakes briefly every few minutes instead of staying on all the time
     fun pulseEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean("pulse_on", true)
+
+    /** Pulse mode is on AND the screen can really be switched off; without that permission the old always-on clock runs. */
+    fun pulseActive(ctx: Context): Boolean = pulseEnabled(ctx) && ScreenLock.isGranted(ctx)
+
     fun pulseMinutes(ctx: Context): Int = prefs(ctx).getInt("pulse_min", 1).coerceIn(1, PULSE_MIN_MAX)
 
     /** Seconds the clock is shown; always at least 5 s shorter than the interval so the cycles never overlap. */
