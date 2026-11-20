@@ -2,7 +2,7 @@
     <string name="app_name">Battery Percent</string>
     <string name="channel_name">Battery percentage</string>
     <string name="notif_title">Battery Percent</string>
-    <string name="msg_permissions_intro">Please allow the next prompts: notifications, battery, display over other apps</string>
+    <string name="msg_permissions_intro">Please allow the next prompts: notifications, battery, display over other apps, alarms and screen-off</string>
     <string name="msg_overlay_missing">\"Display over other apps\" is required to open the charging screen automatically. Open the app again to allow it.</string>
     <string name="msg_running">Battery Percent is running</string>
     <string name="tab_battery">باتری و شارژ</string>
@@ -60,4 +60,25 @@
     <string name="shift_range">فاصلهٔ پایین آمدن (۱۰۰٪ = بدون هیچ پیکسل مشترک با ساعت قبل)</string>
     <string name="top_pad">فاصلهٔ اضافه از بالا (اگر دوربین بالای ساعت را می‌پوشاند)</string>
     <string name="shift_note">خاموش = ساعت همیشه در بالاترین جا می‌ماند. فاصلهٔ کمتر از ۱۰۰٪ یعنی بخشی از پیکسل‌های ساعت قبل دوباره روشن می‌شود. برای آنالوگ و دیجیتال یکسان اعمال می‌شود. رنگ سبز/قرمز (حالت «خودکار») هر ۳۰ دقیقه با هم عوض می‌شود.</string>
+
+    <string name="msg_lock_missing">برای حالت پالسی باید مجوز «خاموش کردن صفحه» داده شود (تب ساعت ← بررسی دوبارهٔ مجوزها). تا آن موقع صفحه با تایم‌اوت خود گوشی خاموش می‌شود.</string>
+    <string name="lock_title">مجوز خاموش کردن صفحه</string>
+    <string name="lock_message">در حالت پالسی، برنامه هر دقیقه صفحه را چند ثانیه روشن می‌کند و بعد خودش خاموش می‌کند (مثل زدن دکمهٔ پاور).\n\nبرای این کار یک سرویس دسترس‌پذیری لازم است که فقط همین یک کار را می‌کند و هیچ چیزی از صفحه نمی‌خواند.\n\n۱) «باز کردن تنظیمات» را بزن، «Battery Percent» را پیدا کن و روشن کن.\n۲) اگر گزینه خاکستری بود (اندروید ۱۳ به بالا)، اول «تنظیمات محدودشده» را بزن، در صفحهٔ اطلاعات برنامه از منوی سه‌نقطه «Allow restricted settings» را بزن و دوباره مرحلهٔ ۱ را انجام بده.</string>
+    <string name="lock_open">باز کردن تنظیمات</string>
+    <string name="lock_restricted">تنظیمات محدودشده</string>
+    <string name="lock_later">بعداً</string>
+    <string name="lock_admin_explain">فقط برای خاموش کردن صفحه بعد از نمایش ساعت (قفل کردن گوشی) استفاده می‌شود. هیچ اطلاعاتی خوانده یا پاک نمی‌شود.</string>
+    <string name="a11y_description">فقط برای خاموش کردن صفحه بعد از نمایش چند ثانیه‌ای ساعت. هیچ چیزی از صفحه خوانده نمی‌شود.</string>
+    <string name="sec_pulse">نحوهٔ نمایش ساعت</string>
+    <string name="pulse_mode_title">حالت نمایش</string>
+    <string name="pulse_always">همیشه روشن</string>
+    <string name="pulse_pulse">پالسی (کم‌مصرف)</string>
+    <string name="pulse_interval">هر چند دقیقه صفحه روشن شود و ساعت آپدیت شود</string>
+    <string name="pulse_seconds">مدت نمایش ساعت</string>
+    <string name="pulse_note">پالسی: صفحه سر هر دقیقه (یا فاصلهٔ انتخابی) چند ثانیه روشن می‌شود، ساعت را نشان می‌دهد و خودش خاموش می‌شود؛ بین دو بار پردازنده و صفحه می‌خوابند. با دکمهٔ پاور یا لمس صفحه گوشی را بیدار می‌کنی. سر ساعت (دقیقهٔ ۰) صفحه با بیشترین نور و حداقل به اندازهٔ «مدت چشمک» روشن می‌ماند.</string>
+    <string name="recheck_permissions">بررسی دوبارهٔ مجوزها</string>
+    <string name="sec_symbol">نماد ماه و خورشید (مثل AM/PM)</string>
+    <string name="moon_from">ماه از ساعت</string>
+    <string name="sun_from">خورشید از ساعت</string>
+    <string name="symbol_note">از ساعت «ماه» تا ساعت «خورشید» نماد ماه و از ساعت «خورشید» تا ساعت «ماه» نماد خورشید نشان داده می‌شود. پیش‌فرض: ماه ۰۰:۰۰ تا ۱۱:۵۹، خورشید ۱۲:۰۰ تا ۲۳:۵۹. در ساعت دیجیتال فقط در حالت ۱۲ ساعته دیده می‌شود.</string>
 </resources>

@@ -55,5 +55,16 @@ object Schedule {
         return null
     }
 
+    /** Minutes from now until the next minute that lies inside a range (1..1440). */
+    fun minutesUntilActive(ctx: Context): Int {
+        val c = Calendar.getInstance()
+        val now = c.get(Calendar.HOUR_OF_DAY) * 60 + c.get(Calendar.MINUTE)
+        for (d in 1..1440) {
+            val t = (now + d) % 1440
+            if (contains(start(ctx, DAY), end(ctx, DAY), t) || contains(start(ctx, NIGHT), end(ctx, NIGHT), t)) return d
+        }
+        return 1440
+    }
+
     fun isActive(ctx: Context): Boolean = brightnessNow(ctx) != null
 }

@@ -36,6 +36,9 @@ class ClockActivity : Activity() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var flashing = false
 
+    /** Pulse mode: shown for a few seconds, then the screen is switched off again (see [Pulse.kt]). */
+    private var pulse = false
+
     // Window changes cause a visible surface update, so they are made only when the value really changes.
     private var lastBrightness = -1f
     private var screenHeld = false
@@ -45,11 +48,14 @@ class ClockActivity : Activity() {
         applySchedule()
     }
 
+    private val endPulse = Runnable { finishPulse() }
+
     private val timeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             applySchedule()
             // ACTION_TIME_TICK fires at the start of every minute: minute 0 = a new hour has just begun.
             if (intent.action == Intent.ACTION_TIME_TICK &&
+                !pulse &&
                 !ClockState.expired &&
                 ClockStyle.flashEnabled(this@ClockActivity) &&
                 Calendar.getInstance().get(Calendar.MINUTE) == 0
@@ -62,6 +68,7 @@ class ClockActivity : Activity() {
     @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pulse = intent?.getBooleanExtra(EXTRA_PULSE, false) == true
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
@@ -112,6 +119,32 @@ class ClockActivity : Activity() {
             }
         )
         applySchedule()
+        if (pulse) {
+            if (ClockState.expired) finishPulse() else handler.postDelayed(endPulse, pulseMillis())
+        }
+    }
+
+    /** True in the first minute of an hour while the hourly flash is switched on. */
+    private fun isHourFlash(): Boolean =
+        ClockStyle.flashEnabled(this) && Calendar.getInstance().get(Calendar.MINUTE) == 0
+
+    /** How long a pulse lasts; the hourly flash makes the one at minute 0 at least as long as the flash time. */
+    private fun pulseMillis(): Long {
+        var sec = ClockStyle.pulseSeconds(this)
+        if (isHourFlash()) sec = maxOf(sec, ClockStyle.flashSeconds(this))
+        return sec * 1000L
+    }
+
+    /** End of a pulse: let go of the screen, switch it off (like the power button) and close the clock. */
+    private fun finishPulse() {
+        handler.removeCallbacks(endPulse)
+        holdScreen(false)
+        // Announce the screen-off first: the service must not mistake it for the user and open the clock again.
+        val canLock = ScreenLock.isGranted(this)
+        PulseState.markExpectedOff(this, canLock)
+        if (canLock) ScreenLock.lock(this)
+        ClockState.showing = false
+        finishAndRemoveTask()
     }
 
     override fun onResume() {
@@ -136,7 +169,7 @@ class ClockActivity : Activity() {
             clockView.blank = false
         }
         holdScreen(true)                                     // also renews the wake lock every minute
-        if (!flashing) setBrightness(brightness)
+        if (!flashing) setBrightness(if (pulse && isHourFlash()) FULL_BRIGHTNESS else brightness)
     }
 
     /** Battery percentage and temperature from the sticky battery broadcast (read once a minute, no receiver kept). */
@@ -192,7 +225,8 @@ class ClockActivity : Activity() {
                         .newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "ClockAOD:clock")
                         .apply { setReferenceCounted(false) }
                 }
-                wakeLock?.acquire(WAKE_LOCK_MS)
+                // A pulse needs the lock only for its own few seconds, so a crash cannot keep the screen on.
+                wakeLock?.acquire(if (pulse) pulseMillis() + 5000L else WAKE_LOCK_MS)
             } else {
                 if (screenHeld) {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -241,6 +275,12 @@ class ClockActivity : Activity() {
 
     private fun goHomeAndClose() {
         ClockState.showing = false
+        if (pulse) {
+            // The user wants the phone: stop the pulse cycle (it restarts when the screen goes off again).
+            handler.removeCallbacks(endPulse)
+            PulseState.expectOffUntil = 0L
+            PulseScheduler.cancel(this)
+        }
         try {
             startActivity(
                 Intent(Intent.ACTION_MAIN)
@@ -271,6 +311,9 @@ class ClockActivity : Activity() {
     }
 
     companion object {
+        /** Intent extra: this run of the clock is one pulse of pulse mode. */
+        const val EXTRA_PULSE = "pulse"
+
         /** Refresh rate (Hz) requested for the clock: the lowest the system will give. */
         const val LOW_REFRESH_HZ = 1f
 

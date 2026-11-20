@@ -30,6 +30,8 @@ object ClockStyle {
     const val LINE_MIN = 1           // pen width in pixels
     const val LINE_MAX = 4
     const val FLASH_MAX_SEC = 60
+    const val PULSE_MIN_MAX = 10     // minutes between two pulses
+    const val PULSE_SEC_MAX = 30     // seconds the clock is shown
     const val SHIFT_MIN = 10         // % of the full hourly step
     const val TOP_PAD_MAX = 150      // dp
 
@@ -78,7 +80,11 @@ object ClockStyle {
         /** How far down the lower position is, % of the full step (100 = no pixel shared with the top position). */
         val shiftRange: Int = 100,
         /** Extra space (dp) between the camera / top edge and the clock, for phones whose camera hides the top. */
-        val topPad: Int = 0
+        val topPad: Int = 0,
+        /** Minute of the day (0..1439) from which the SUN is shown; the sun stays until [moonStart]. Works like AM / PM. */
+        val sunStart: Int = 12 * 60,
+        /** Minute of the day (0..1439) from which the MOON is shown; the moon stays until [sunStart]. */
+        val moonStart: Int = 0
     )
 
     fun load(ctx: Context): Config {
@@ -116,7 +122,9 @@ object ClockStyle {
             tempC3 = pal(p.getInt("temp_c3", d.tempC3)),
             shiftOn = p.getBoolean("shift_on", d.shiftOn),
             shiftRange = p.getInt("shift_range", d.shiftRange).coerceIn(SHIFT_MIN, 100),
-            topPad = p.getInt("top_pad", d.topPad).coerceIn(0, TOP_PAD_MAX)
+            topPad = p.getInt("top_pad", d.topPad).coerceIn(0, TOP_PAD_MAX),
+            sunStart = p.getInt("sun_start", d.sunStart).coerceIn(0, 1439),
+            moonStart = p.getInt("moon_start", d.moonStart).coerceIn(0, 1439)
         )
     }
 
@@ -142,6 +150,16 @@ object ClockStyle {
     // ---- hourly flash (full brightness at minute 0)
     fun flashEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean("flash_on", true)
     fun flashSeconds(ctx: Context): Int = prefs(ctx).getInt("flash_sec", 10).coerceIn(1, FLASH_MAX_SEC)
+
+    // ---- pulse mode: the screen wakes briefly every few minutes instead of staying on all the time
+    fun pulseEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean("pulse_on", true)
+    fun pulseMinutes(ctx: Context): Int = prefs(ctx).getInt("pulse_min", 1).coerceIn(1, PULSE_MIN_MAX)
+
+    /** Seconds the clock is shown; always at least 5 s shorter than the interval so the cycles never overlap. */
+    fun pulseSeconds(ctx: Context): Int {
+        val limit = minOf(PULSE_SEC_MAX, pulseMinutes(ctx) * 60 - 5)
+        return prefs(ctx).getInt("pulse_sec", 5).coerceIn(2, limit)
+    }
 
     /** Forgets every look setting (the day / night schedule is kept). */
     fun reset(ctx: Context) {

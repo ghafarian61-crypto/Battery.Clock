@@ -217,17 +217,25 @@ class ClockView(context: Context) : View(context) {
 
     /** Sets the time to show. Call it again every minute. */
     fun setTime(hour24: Int, minute: Int) {
-        if (timeSet && hour24 == this.hour24 && minute == this.minute) return     // nothing changed: no redraw
+        val sun = isSunAt(hour24 * 60 + minute)
+        if (timeSet && hour24 == this.hour24 && minute == this.minute && sun == isDay) return     // nothing changed: no redraw
         timeSet = true
         this.hour24 = hour24
         this.minute = minute
         hourAngle = ((hour24 % 12) * 60 + minute) * 0.5f      // 360 degrees over 720 minutes
         minuteAngle = minute * 6f                              // 360 degrees over 60 minutes
         position = hour24 % 2
-        isDay = hour24 >= DAY_START_HOUR && hour24 < DAY_END_HOUR
+        isDay = sun
         updateText()
         applyColors()
         invalidate()
+    }
+
+    /** Sun from cfg.sunStart until cfg.moonStart (around midnight too), moon the rest: AM / PM style, set in the settings. */
+    private fun isSunAt(minuteOfDay: Int): Boolean {
+        val len = (cfg.moonStart - cfg.sunStart + 1440) % 1440
+        if (len == 0) return true
+        return (minuteOfDay - cfg.sunStart + 1440) % 1440 < len
     }
 
     private fun rebuildLabels() {
@@ -660,10 +668,6 @@ class ClockView(context: Context) : View(context) {
 
         /** The sun's core (share of the sun's radius). */
         const val SUN_CORE = 0.45f
-
-        /** Sun from this hour (inclusive) until the end hour (exclusive); moon the rest of the day. */
-        const val DAY_START_HOUR = 6
-        const val DAY_END_HOUR = 18
 
         /** Digit shapes 0..9 (see ClockView.fillPath for the notation). */
         private val EN_GLYPHS = arrayOf(

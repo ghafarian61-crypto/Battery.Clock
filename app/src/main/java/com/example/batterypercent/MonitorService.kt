@@ -61,6 +61,7 @@ class MonitorService : Service() {
             when (intent.action) {
                 Intent.ACTION_POWER_CONNECTED -> {
                     plugged = true
+                    PulseScheduler.cancel(context)                      // the charging screen takes over
                     handler.removeCallbacks(openClockRunnable)
                     if (ClockState.showing) ClockState.closeScreen()   // the charging screen takes over
                     ChargeState.reset()
@@ -78,7 +79,12 @@ class MonitorService : Service() {
                     if (isInteractive()) BatteryWidgetProvider.updateAll(context, intent)
                 }
                 Intent.ACTION_SCREEN_OFF -> onScreenOff(context)
-                Intent.ACTION_SCREEN_ON -> BatteryWidgetProvider.updateAll(context, BatteryInfo.sticky(context))
+                Intent.ACTION_SCREEN_ON -> {
+                    // A screen-on we did not cause = the user woke the phone: the pulse cycle stops until the
+                    // screen goes off again.
+                    if (ClockStyle.pulseEnabled(context) && !PulseState.isOurWake()) PulseScheduler.cancel(context)
+                    BatteryWidgetProvider.updateAll(context, BatteryInfo.sticky(context))
+                }
             }
         }
     }
@@ -98,7 +104,10 @@ class MonitorService : Service() {
         BatteryWidgetProvider.updateAll(this, BatteryInfo.sticky(this), force = true)
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == PulseScheduler.ACTION) handler.post { onPulseAlarm() }
+        return START_STICKY
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -114,6 +123,8 @@ class MonitorService : Service() {
     private fun isInteractive(): Boolean = getSystemService(PowerManager::class.java).isInteractive
 
     private fun onScreenOff(context: Context) {
+        // The end of a pulse switches the screen off on purpose: that is not the user and needs no reaction.
+        if (PulseState.consumeExpectedOff()) return
         handler.removeCallbacks(openRunnable)
         handler.removeCallbacks(wakeRunnable)
         handler.removeCallbacks(openClockRunnable)
@@ -155,6 +166,10 @@ class MonitorService : Service() {
         if (!Schedule.isActive(this)) return             // outside the day / night ranges: stay off
         if (ClockState.showing) return
         if (!Settings.canDrawOverlays(this)) return
+        if (ClockStyle.pulseEnabled(this)) {
+            startPulse()
+            return
+        }
         try {
             startActivity(
                 Intent(this, ClockActivity::class.java)
@@ -162,6 +177,47 @@ class MonitorService : Service() {
             )
         } catch (e: Exception) {
         }
+    }
+
+    /** The alarm of pulse mode: wake the screen for a few seconds, unless the situation has changed. */
+    private fun onPulseAlarm() {
+        if (!ClockStyle.pulseEnabled(this)) return                        // mode switched off: the chain ends
+        if (plugged || BatteryInfo.plugged(BatteryInfo.sticky(this))) return   // the charging screen is used instead
+        if (isInteractive()) return                                       // someone uses the phone: restart at next screen-off
+        if (!Schedule.isActive(this)) {                                   // outside the day / night ranges: sleep until the next one
+            PulseScheduler.scheduleAfterInactive(this)
+            return
+        }
+        if (ClockState.showing || !Settings.canDrawOverlays(this)) {
+            PulseScheduler.scheduleNext(this)
+            return
+        }
+        startPulse()
+    }
+
+    /**
+     * One pulse: open the clock in pulse mode (it turns the screen on through its window flags, shows the time for a
+     * few seconds and switches the screen off again) and book the next alarm. The CPU is kept awake only for the start.
+     */
+    @Suppress("DEPRECATION")
+    private fun startPulse() {
+        PulseState.markOurWake()
+        try {
+            getSystemService(PowerManager::class.java)
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BatteryPercent:pulse-start")
+                .apply { setReferenceCounted(false) }
+                .acquire(10_000L)
+        } catch (e: Exception) {
+        }
+        try {
+            startActivity(
+                Intent(this, ClockActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra(ClockActivity.EXTRA_PULSE, true)
+            )
+        } catch (e: Exception) {
+        }
+        PulseScheduler.scheduleNext(this)
     }
 
     @Suppress("DEPRECATION")

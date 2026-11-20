@@ -18,6 +18,7 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import java.util.Locale
 
 /**
@@ -63,6 +64,38 @@ class ClockSettings(private val a: Activity, private val onReset: () -> Unit) {
             intArrayOf(R.string.hour_24, R.string.hour_12),
             if (ClockStyle.hour12(a)) 1 else 0
         ) { ClockStyle.setHour12(a, it == 1); refreshPreview() }
+
+        // ---- how the clock is shown: always on, or a short pulse every few minutes
+        addHeader(root, R.string.sec_pulse)
+        addChoice(
+            root, R.string.pulse_mode_title,
+            intArrayOf(R.string.pulse_always, R.string.pulse_pulse),
+            if (ClockStyle.pulseEnabled(a)) 1 else 0
+        ) {
+            ClockStyle.setBool(a, "pulse_on", it == 1)
+            if (it == 1 && !ScreenLock.isGranted(a)) {
+                Toast.makeText(a, R.string.msg_lock_missing, Toast.LENGTH_LONG).show()
+            }
+        }
+        addSeek(root, R.string.pulse_interval, 1, ClockStyle.PULSE_MIN_MAX, "pulse_min", 1, " min")
+        addSeek(root, R.string.pulse_seconds, 2, ClockStyle.PULSE_SEC_MAX, "pulse_sec", 5, " s")
+        val pulseNote = text(R.string.pulse_note, 13f, Color.GRAY)
+        pulseNote.setPadding(0, dp(8), 0, 0)
+        root.addView(pulseNote)
+        val recheck = Button(a)
+        recheck.setText(R.string.recheck_permissions)
+        recheck.setOnClickListener { a.recreate() }
+        val rlp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        rlp.topMargin = dp(12)
+        root.addView(recheck, rlp)
+
+        // ---- sun / moon symbol (works like AM / PM)
+        addHeader(root, R.string.sec_symbol)
+        addTimeRow(root, R.string.moon_from, "moon_start", 0)
+        addTimeRow(root, R.string.sun_from, "sun_start", 12 * 60)
+        val symbolNote = text(R.string.symbol_note, 13f, Color.GRAY)
+        symbolNote.setPadding(0, dp(8), 0, 0)
+        root.addView(symbolNote)
 
         // ---- clock digits / numbers
         addHeader(root, R.string.sec_clock)
@@ -315,6 +348,23 @@ class ClockSettings(private val a: Activity, private val onReset: () -> Unit) {
             if (index >= 0) onPick(index)
         }
         root.addView(group)
+    }
+
+    /** A time of day (button, tap to type) stored as minutes since midnight under [key]. */
+    private fun addTimeRow(root: LinearLayout, titleRes: Int, key: String, default: Int) {
+        val title = text(titleRes, 16f, Color.WHITE)
+        title.setPadding(0, dp(16), 0, dp(2))
+        root.addView(title)
+        val btn = Button(a)
+        btn.text = fmt(ClockStyle.getInt(a, key, default))
+        btn.setOnClickListener {
+            askTime(ClockStyle.getInt(a, key, default)) { m ->
+                ClockStyle.setInt(a, key, m)
+                btn.text = fmt(m)
+                refreshPreview()
+            }
+        }
+        root.addView(btn)
     }
 
     /** One range: [title], [start] to [end] (tap to type), and the brightness bar with its percentage. */
