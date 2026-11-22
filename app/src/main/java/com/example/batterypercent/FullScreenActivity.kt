@@ -30,6 +30,7 @@ abstract class FullScreenActivity : Activity() {
         cfg = AppConfig.load(this)
         chargeView = ChargeView(this, cfg)
         setContentView(chargeView)
+        hideSystemBars()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

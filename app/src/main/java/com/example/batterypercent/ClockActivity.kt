@@ -92,6 +92,7 @@ class ClockActivity : Activity() {
 
         clockView = ClockView(this)
         setContentView(clockView)
+        hideSystemBars()            // again: before the content exists the window has no insets controller yet
         ClockState.attach(this)
 
         // One short tap (finger lifted without moving or holding) closes the clock at once, so the lock screen
