@@ -86,11 +86,7 @@ class ClockActivity : Activity() {
             lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             window.attributes = lp
         }
-        window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            )
+        hideSystemBars()
 
         requestLowRefresh()
 
@@ -149,7 +145,14 @@ class ClockActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        hideSystemBars()
         applySchedule()
+    }
+
+    /** The navigation buttons must not light up on the black picture: hide the bars again whenever we get focus. */
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideSystemBars()
     }
 
     /** Shows the time and applies the brightness of the current range; outside every range: black and off. */

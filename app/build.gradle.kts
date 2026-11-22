@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.batterypercent"
         minSdk = 26
         targetSdk = 33
-        versionCode = 10
-        versionName = "3.6"
+        versionCode = 11
+        versionName = "3.6.1"
     }
 
     // One fixed key for every build (the file is part of the project). Without it each GitHub run makes a new random
