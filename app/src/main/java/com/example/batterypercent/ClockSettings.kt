@@ -3,6 +3,9 @@ package com.example.batterypercent
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.graphics.Color
 import android.text.InputFilter
 import android.text.InputType
@@ -79,12 +82,48 @@ class ClockSettings(private val a: Activity, private val onReset: () -> Unit) {
         }
         addSeek(root, R.string.pulse_interval, 1, ClockStyle.PULSE_MIN_MAX, "pulse_min", 1, " min")
         addSeek(root, R.string.pulse_seconds, 2, ClockStyle.PULSE_SEC_MAX, "pulse_sec", 5, " s")
+        val viaAccess = ScreenLock.accessibilityEnabled(a)
         val lockStatus = text(
-            if (ScreenLock.isGranted(a)) R.string.lock_status_on else R.string.lock_status_off,
-            14f, if (ScreenLock.isGranted(a)) Color.rgb(90, 255, 90) else Color.rgb(255, 120, 90)
+            when {
+                viaAccess -> R.string.lock_status_access
+                ScreenLock.isGranted(a) -> R.string.lock_status_admin
+                else -> R.string.lock_status_off
+            },
+            14f,
+            when {
+                viaAccess -> Color.rgb(90, 255, 90)
+                ScreenLock.isGranted(a) -> Color.rgb(255, 220, 60)
+                else -> Color.rgb(255, 120, 90)
+            }
         )
         lockStatus.setPadding(0, dp(12), 0, 0)
         root.addView(lockStatus)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !viaAccess) {
+            // Fingerprint keeps working only with the accessibility method; shortcuts to switch it on.
+            val openAccess = Button(a)
+            openAccess.setText(R.string.open_accessibility)
+            openAccess.setOnClickListener {
+                try {
+                    a.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                } catch (e: Exception) {
+                }
+            }
+            root.addView(openAccess)
+            val openInfo = Button(a)
+            openInfo.setText(R.string.open_app_info)
+            openInfo.setOnClickListener {
+                try {
+                    a.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + a.packageName))
+                    )
+                } catch (e: Exception) {
+                }
+            }
+            root.addView(openInfo)
+            val adbNote = text(R.string.adb_note, 12f, Color.GRAY)
+            adbNote.setPadding(0, dp(8), 0, 0)
+            root.addView(adbNote)
+        }
         addSwitch(root, R.string.pulse_first, "pulse_first", false)
         val pulseNote = text(R.string.pulse_note, 13f, Color.GRAY)
         pulseNote.setPadding(0, dp(8), 0, 0)
